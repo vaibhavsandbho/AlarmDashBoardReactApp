@@ -1,6 +1,6 @@
 // services/alarmService.js
 
-const API_BASE_URL = 'http://localhost:8090';
+const API_BASE_URL = 'http://localhost:8080/EquipmentAlarm';
 
 export class AlarmService {
   // Fetch filtered alarms from database
@@ -29,26 +29,7 @@ export class AlarmService {
     }
   }
 
-  // Acknowledge an alarm
-  static async acknowledgeAlarm(alarmId) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/alarm/acknowledge/${alarmId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to acknowledge alarm:', error);
-      throw new Error('Failed to acknowledge alarm');
-    }
-  }
+
 }
 
 // SSE Connection Manager

@@ -1,8 +1,7 @@
-
 "use client";
 // IntegratedAlarmDashboard.jsx
-import React, { useRef } from 'react';
-import { AlertTriangle, CheckCircle, RefreshCw } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { AlertTriangle, CheckCircle, RefreshCw, Search, Calendar, X } from 'lucide-react';
 
 // Custom hooks
 import { useAlarmData } from './hooks/useAlarmData';
@@ -13,12 +12,16 @@ import { AlarmFilters } from './components/AlarmFilters';
 import { AlarmCard } from './components/AlarmCard';
 
 // Utils
-import { sortAlarms } from './utils/alarmUtils';
+import { sortAlarms, applyClientSideSearch, filterAlarmsByTab, getAlarmCounts, applyDateRangeFilter, getDatePresets } from './utils/alarmUtils';
 
 // Main integrated dashboard component
 export default function IntegratedAlarmDashboard() {
   const containerRef = useRef(null);
-  
+  const [activeTab, setActiveTab] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [dateRange, setDateRange] = useState({ from: '', to: '' });
+
   // Use custom hook to manage all alarm-related state and logic
   const {
     displayedAlarms,
@@ -36,13 +39,43 @@ export default function IntegratedAlarmDashboard() {
     handleAcknowledge
   } = useAlarmData();
 
-  // Sort alarms for display
-  const sortedAlarms = sortAlarms(displayedAlarms);
+  // Apply client-side search and filtering
+  const dateFiltered = applyDateRangeFilter(displayedAlarms, dateRange.from, dateRange.to);
+  const searchFiltered = applyClientSideSearch(dateFiltered, searchTerm);
+  const tabFiltered = filterAlarmsByTab(searchFiltered, activeTab);
+  const sortedAlarms = sortAlarms(tabFiltered);
+   
+  {/* Choose the list you want to show status for */}
+const alarmList = sortedAlarms.length > 0 ? sortedAlarms : displayedAlarms;
+
+  // Calculate stats from original data
+  const alarmCounts = getAlarmCounts(displayedAlarms);
+
+  // Date presets
+  const datePresets = getDatePresets();
+
+  // Handle date preset selection
+  const handleDatePreset = (preset) => {
+    setDateRange({ from: preset.from, to: preset.to });
+  };
+
+
+  // Clear date filter
+  const clearDateFilter = () => {
+    setDateRange({ from: '', to: '' });
+  };
+
+  // Check if date filter is active
+  const isDateFilterActive = dateRange.from || dateRange.to;
+
+
+
+
 
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 flex items-center justify-center" >
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">Connecting to real-time alarm stream...</p>
@@ -52,125 +85,258 @@ export default function IntegratedAlarmDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 p-6" style={{
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+  }}>
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                Equipment Alarm Dashboard
-              </h1>
-              <div className="flex items-center space-x-4 mt-1">
-                <p className="text-gray-600">
-                  Last updated: {lastUpdated.toLocaleTimeString()}
-                </p>
-                <div className="flex items-center space-x-2">
-                  <div className={`w-2 h-2 rounded-full ${
-                    connectionStatus === 'connected' ? 'bg-green-500' : 
-                    connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
-                  }`}></div>
-                  <span className={`text-xs font-medium ${
-                    connectionStatus === 'connected' ? 'text-green-600' : 
-                    connectionStatus === 'connecting' ? 'text-yellow-600' : 'text-red-600'
-                  }`}>
-                    {connectionStatus === 'connected' ? 'Real-time Connected' : 
-                     connectionStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
-                  </span>
-                </div>
-                {isFilterMode && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    Filtered Results
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {connectionStatus === 'disconnected' && (
-                <button 
-                  onClick={handleReconnect}
-                  className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Reconnect
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+     <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+  {/* Centered Title */}
+  <div className="flex justify-center mb-4">
+    <h1 className="text-2xl font-bold text-gray-800">
+      Equipment Alarm Dashboard
+    </h1>
+  </div>
+
+  {/* Status Row */}
+  <div className="flex items-center justify-between text-sm text-gray-600">
+    <div className="flex items-center space-x-2">
+      <div
+        className={`w-2 h-2 rounded-full ${
+          connectionStatus === 'connected'
+            ? 'bg-green-500'
+            : connectionStatus === 'connecting'
+            ? 'bg-yellow-500'
+            : 'bg-red-500'
+        }`}
+      ></div>
+      <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+    </div>
+
+    <div className="flex items-center space-x-2">
+      <span>Auto-refresh: ON</span>
+    </div>
+
+    {connectionStatus === 'disconnected' && (
+      <button
+        onClick={handleReconnect}
+        className="flex items-center px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs"
+      >
+        <RefreshCw className="w-3 h-3 mr-1" />
+        Reconnect
+      </button>
+    )}
+  </div>
+</div>
+
 
       {/* Error Banner */}
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center">
-              <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
-              <p className="text-red-700">{error}</p>
-            </div>
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-lg">
+          <div className="flex items-center">
+            <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
+            <p className="text-red-700">{error}</p>
           </div>
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AlarmStats alarms={displayedAlarms} />
-        
-        <AlarmFilters 
-          filters={filters} 
-          onFilterChange={handleFilterChange}
-          onApplyFilters={handleApplyFilters}
-          onClearFilters={handleClearFilters}
-          isLoading={filterLoading}
-        />
+      {/* Stats Cards */}
+      <AlarmStats alarms={displayedAlarms} />
 
-        {/* Alarms List */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Equipment Alarms ({displayedAlarms.length})
-              {isFilterMode ? (
-                <span className="text-sm font-normal text-blue-600 ml-2">(Database Filtered)</span>
-              ) : (
-                <span className="text-sm font-normal text-green-600 ml-2"></span>
-              )}
-            </h2>
-            {displayedAlarms.length > 0 && (
-              <div className="text-sm text-gray-500">
-                {sortedAlarms.filter(a => a.equipmentAlarmStatus === true).length} active, {' '}
-                {sortedAlarms.filter(a => a.equipmentAlarmStatus === false).length} inactive
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-4 gap-6" style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}>
+        {/* Left Content - Equipment Alarms */}
+        <div className="col-span-3 mt-10">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden h-[600px]">
+
+            {/* Header with Tabs */}
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-800">
+                  Equipment Alarms ({tabFiltered.length})
+                  {isFilterMode && (
+                    <span className="text-sm font-normal text-blue-600 ml-2">(Database Filtered)</span>
+                  )}
+                  {isDateFilterActive && (
+                    <span className="text-sm font-normal text-green-600 ml-2">(Date Filtered)</span>
+                  )}
+                </h2>
+                <div className="flex items-center space-x-3">
+                  {/* Date Filter Button */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowDateFilter(!showDateFilter)}
+                      className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDateFilterActive
+                          ? 'bg-green-100 text-green-700 border border-green-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Date Filter
+                      {isDateFilterActive && (
+                        <span className="ml-1 w-2 h-2 bg-green-500 rounded-full"></span>
+                      )}
+                    </button>
+
+                    {/* Date Filter Dropdown */}
+                    {showDateFilter && (
+                      <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 p-4 z-10">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-medium text-gray-900">Filter by Date Range</h3>
+                          <button
+                            onClick={() => setShowDateFilter(false)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Date Inputs */}
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">From Date</label>
+                            <input
+                              type="date"
+                              value={dateRange.from}
+                              onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">To Date</label>
+                            <input
+                              type="date"
+                              value={dateRange.to}
+                              onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Date Presets */}
+                        <div className="mb-4">
+                          <label className="block text-xs font-medium text-gray-700 mb-2">Quick Select</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {Object.entries(datePresets).map(([key, preset]) => (
+                              <button
+                                key={key}
+                                onClick={() => handleDatePreset(preset)}
+                                className="px-3 py-2 text-xs font-medium bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Clear Filter */}
+                        {isDateFilterActive && (
+                          <button
+                            onClick={clearDateFilter}
+                            className="w-full px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                          >
+                            Clear Date Filter
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search equipment..."
+                      className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Filter Tabs */}
+              <div className="flex space-x-1">
+                {['All', 'Active', 'Critical'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                  >
+                    {tab}
+                    <span className="ml-2 px-2 py-0.5 text-xs bg-white/20 rounded-full">
+                      {tab === 'All' ? alarmCounts.total :
+                        tab === 'Active' ? alarmCounts.active :
+                          alarmCounts.critical}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Alarms List */}
+            <div className="p-6">
+              {sortedAlarms.length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No alarms found</h3>
+                  <p className="text-gray-500">
+                    {isFilterMode
+                      ? 'No alarms match your filter criteria.'
+                      : connectionStatus === 'connected'
+                        ? 'All systems are operating normally.'
+                        : 'Waiting for real-time connection...'}
+                  </p>
+                </div>
+              ) : (
+                <div
+                  ref={containerRef}
+                  className="space-y-4 max-h-96 overflow-y-auto"
+                >
+                  {sortedAlarms.map((alarm, index) => (
+                    <AlarmCard
+                      key={alarm.id || index}
+                      alarm={alarm}
+                      onAcknowledge={handleAcknowledge}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-          
-          {sortedAlarms.length === 0 ? (
-            <div className="text-center py-12">
-              <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No alarms found</h3>
-              <p className="text-gray-500">
-                {isFilterMode 
-                  ? 'No alarms match your filter criteria. Try adjusting your filters.' 
-                  : connectionStatus === 'connected'
-                    ? 'All systems are operating normally. Real-time monitoring active.'
-                    : 'Waiting for real-time connection...'}
-              </p>
-            </div>
-          ) : (
-            <div 
-              ref={containerRef}
-              className="space-y-4 max-h-96 overflow-y-auto"
-              style={{ maxHeight: '600px' }}
-            >
-              {sortedAlarms.map((alarm, index) => (
-                <AlarmCard 
-                  key={alarm.id || index} 
-                  alarm={alarm} 
-                  onAcknowledge={handleAcknowledge} 
-                />
-              ))}
-            </div>
-          )}
         </div>
+
+        {/* Right Sidebar */}
+  {/* Equipment Status */}
+<div className="bg-white rounded-2xl shadow-lg p-6 mt-10">
+  <h3 className="text-lg font-semibold text-gray-800 mb-4">Equipment Status</h3>
+  <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
+    {[...new Set(alarmList.map(alarm => alarm.equipmentName))].map((equipmentName) => {
+      const count = alarmList.filter(a => a.equipmentName === equipmentName).length;
+      return (
+        <div
+          key={equipmentName}
+          className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+        >
+          <p className="text-sm font-medium text-gray-900">{equipmentName}</p>
+          <p className="text-lg font-bold text-gray-900">{count}</p>
+        </div>
+      );
+    })}
+
+    {/* If no alarms found */}
+    {alarmList.length === 0 && (
+      <div className="text-center py-4">
+        <p className="text-gray-500">No equipment found</p>
+      </div>
+    )}
+  </div>
+</div>
       </div>
     </div>
   );
