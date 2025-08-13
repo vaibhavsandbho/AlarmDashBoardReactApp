@@ -9,10 +9,10 @@ export const AlarmCard = ({ alarm, onAcknowledge }) => {
 
   return (
     <div className={`rounded-xl p-6 border-l-4 ${isActive ? 'border-l-red-500 bg-red-50' : 'border-l-green-500 bg-green-50'
-      }`}>
+      }`} >
       {/* Alarm Header */}
       <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
+        <div className="flex-1" >
           <div className="flex items-center space-x-3 mb-2">
             <h3 className="font-bold text-gray-900 text-lg text-[25px]">
               {alarm.equipmentName || 'Unknown Equipment'}

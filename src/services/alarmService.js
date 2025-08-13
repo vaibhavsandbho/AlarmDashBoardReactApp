@@ -2,6 +2,8 @@
 
 const API_BASE_URL = 'http://localhost:8080/EquipmentAlarm';
 
+// const API_BASE_URL = 'http://10.192.65.167:8080/EquipmentAlarm';
+
 export class AlarmService {
   // Fetch filtered alarms from database
   static async fetchFilteredAlarms(filterParams) {

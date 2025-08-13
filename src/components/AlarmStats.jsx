@@ -32,7 +32,7 @@ export const AlarmStats = ({ alarms }) => {
 
   return (
     <div
-     className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-6"
+     className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-6" style={{ marginTop: '30px' }}
     >
       <StatCard 
         title="Total Alarms" 

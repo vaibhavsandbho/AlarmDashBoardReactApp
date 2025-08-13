@@ -44,9 +44,9 @@ export default function IntegratedAlarmDashboard() {
   const searchFiltered = applyClientSideSearch(dateFiltered, searchTerm);
   const tabFiltered = filterAlarmsByTab(searchFiltered, activeTab);
   const sortedAlarms = sortAlarms(tabFiltered);
-   
-  {/* Choose the list you want to show status for */}
-const alarmList = sortedAlarms.length > 0 ? sortedAlarms : displayedAlarms;
+
+  {/* Choose the list you want to show status for */ }
+  const alarmList = sortedAlarms.length > 0 ? sortedAlarms : displayedAlarms;
 
   // Calculate stats from original data
   const alarmCounts = getAlarmCounts(displayedAlarms);
@@ -85,48 +85,88 @@ const alarmList = sortedAlarms.length > 0 ? sortedAlarms : displayedAlarms;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 p-6" style={{
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-  }}>
+    <div
+      className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 p-2"
+      style={{ background: '#2F5597' }}
+    >
       {/* Header */}
-     <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-  {/* Centered Title */}
-  <div className="flex justify-center mb-4">
-    <h1 className="text-2xl font-bold text-gray-800">
-      Equipment Alarm Dashboard
-    </h1>
-  </div>
-
-  {/* Status Row */}
-  <div className="flex items-center justify-between text-sm text-gray-600">
-    <div className="flex items-center space-x-2">
       <div
-        className={`w-2 h-2 rounded-full ${
-          connectionStatus === 'connected'
-            ? 'bg-green-500'
-            : connectionStatus === 'connecting'
-            ? 'bg-yellow-500'
-            : 'bg-red-500'
-        }`}
-      ></div>
-      <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
-    </div>
-
-    <div className="flex items-center space-x-2">
-      <span>Auto-refresh: ON</span>
-    </div>
-
-    {connectionStatus === 'disconnected' && (
-      <button
-        onClick={handleReconnect}
-        className="flex items-center px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs"
+        className="relative bg-white rounded-2xl shadow-lg mb-1 px-2 py-2"
+        style={{ background: '#ffd900e1', height: '90px' }}
       >
-        <RefreshCw className="w-3 h-3 mr-1" />
-        Reconnect
-      </button>
-    )}
-  </div>
-</div>
+        {/* Bigger image, absolutely positioned */}
+        <img
+          src="/assets/MM-images.png"
+          alt="mahindra-logo"
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '10px',
+            transform: 'translateY(-50%)',
+            width: '130px',
+            height: 'auto',
+          }}
+        />
+
+        {/* Centered Title with left padding so it doesn't overlap the image */}
+        <div className="flex items-center justify-center mt-4">
+          <h1 className="text-3xl font-bold text-gray-800 m-0 p-0 leading-tight">
+            Equipment Alarm Dashboard
+          </h1>
+        </div>
+
+
+        {/* Status Row */}
+        <div className="flex items-center justify-between text-xs text-gray-600 py-0.5" style={{ paddingLeft: '200px' }}>
+          <div className="flex items-center space-x-1">
+            <div
+              className={`w-2 h-2 rounded-full ${connectionStatus === 'connected'
+                ? 'bg-green-500'
+                : connectionStatus === 'connecting'
+                  ? 'bg-yellow-500'
+                  : 'bg-red-500'
+                }`}
+            ></div>
+            <span className="m-0 p-0  text-base">Last updated: {lastUpdated.toLocaleTimeString()}</span>
+          </div>
+
+          <div className="flex items-center space-x-1 mr-45">
+            <span className="m-0 p-0 text-base">Auto-refresh: ON</span>
+          </div>
+
+
+
+
+          {connectionStatus === 'disconnected' && (
+            <button
+              onClick={handleReconnect}
+              className="flex items-center px-2 py-0.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs"
+            >
+              <RefreshCw className="w-3 h-3 mr-1" />
+              Reconnect
+            </button>
+          )}
+        </div>
+
+        <img
+          src="/assets/ats-logo.png"
+          alt="mahindra-logo"
+          style={{
+            position: 'absolute',
+            top: '50%',
+            right: '10px',
+            transform: 'translateY(-50%)',
+            width: '130px',
+            height: 'auto',
+          }}
+        />
+      </div>
+
+
+
+
+
+
 
 
       {/* Error Banner */}
@@ -144,11 +184,11 @@ const alarmList = sortedAlarms.length > 0 ? sortedAlarms : displayedAlarms;
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-4 gap-6" style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        background: '#2F5597'
       }}>
         {/* Left Content - Equipment Alarms */}
         <div className="col-span-3 mt-10">
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden h-[600px]">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden h-[760px]">
 
             {/* Header with Tabs */}
             <div className="p-6 border-b border-gray-100">
@@ -162,14 +202,15 @@ const alarmList = sortedAlarms.length > 0 ? sortedAlarms : displayedAlarms;
                     <span className="text-sm font-normal text-green-600 ml-2">(Date Filtered)</span>
                   )}
                 </h2>
+
                 <div className="flex items-center space-x-3">
                   {/* Date Filter Button */}
                   <div className="relative">
                     <button
                       onClick={() => setShowDateFilter(!showDateFilter)}
                       className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDateFilterActive
-                          ? 'bg-green-100 text-green-700 border border-green-200'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-green-100 text-green-700 border border-green-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                     >
                       <Calendar className="w-4 h-4 mr-2" />
@@ -259,13 +300,13 @@ const alarmList = sortedAlarms.length > 0 ? sortedAlarms : displayedAlarms;
 
               {/* Filter Tabs */}
               <div className="flex space-x-1">
-                {['All', 'Active', 'Critical'].map((tab) => (
+                {['All', 'Active'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                   >
                     {tab}
@@ -280,7 +321,7 @@ const alarmList = sortedAlarms.length > 0 ? sortedAlarms : displayedAlarms;
             </div>
 
             {/* Alarms List */}
-            <div className="p-6">
+            <div className="px-6 pt-6 pb-2">
               {sortedAlarms.length === 0 ? (
                 <div className="text-center py-12">
                   <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
@@ -296,7 +337,7 @@ const alarmList = sortedAlarms.length > 0 ? sortedAlarms : displayedAlarms;
               ) : (
                 <div
                   ref={containerRef}
-                  className="space-y-4 max-h-96 overflow-y-auto"
+                  className="space-y-4 max-h-[540px] overflow-y-auto pr-2"
                 >
                   {sortedAlarms.map((alarm, index) => (
                     <AlarmCard
@@ -311,33 +352,44 @@ const alarmList = sortedAlarms.length > 0 ? sortedAlarms : displayedAlarms;
           </div>
         </div>
 
-        {/* Right Sidebar */}
-  {/* Equipment Status */}
-<div className="bg-white rounded-2xl shadow-lg p-6 mt-10">
-  <h3 className="text-lg font-semibold text-gray-800 mb-4">Equipment Status</h3>
-  <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
-    {[...new Set(alarmList.map(alarm => alarm.equipmentName))].map((equipmentName) => {
-      const count = alarmList.filter(a => a.equipmentName === equipmentName).length;
-      return (
-        <div
-          key={equipmentName}
-          className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
-        >
-          <p className="text-sm font-medium text-gray-900">{equipmentName}</p>
-          <p className="text-lg font-bold text-gray-900">{count}</p>
-        </div>
-      );
-    })}
 
-    {/* If no alarms found */}
-    {alarmList.length === 0 && (
-      <div className="text-center py-4">
-        <p className="text-gray-500">No equipment found</p>
+        {/* Right Sidebar */}
+        {/* Equipment Status */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 mt-10 w-[88%] mx-auto">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">
+            Equipment Status
+          </h3>
+
+          <div className="space-y-3 max-h-[635px] overflow-y-auto pr-1 pb-0">
+            {[...new Set(alarmList.map(alarm => alarm.equipmentName))].map((equipmentName) => {
+              const count = alarmList.filter(a => a.equipmentName === equipmentName).length;
+              return (
+                <div
+                  key={equipmentName}
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+                >
+                  <p className="text-sm font-medium text-gray-900">{equipmentName}</p>
+                  <p className="text-lg font-bold text-gray-900">{count}</p>
+                </div>
+              );
+            })}
+
+            {/* If no alarms found */}
+            {alarmList.length === 0 && (
+              <div className="text-center py-1">
+                <p className="text-gray-500">No equipment found</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+
       </div>
-    )}
-  </div>
-</div>
-      </div>
+
     </div>
+
+
+
   );
+
 }
