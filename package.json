@@ -1,11 +1,12 @@
 {
   "name": "reactdashboard",
   "version": "0.1.0",
-  "private": true,
+
 "scripts": {
- "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
+  "dev": "next dev",
+  "build": "next build",
+  "export": "next export",
+  "start": "serve -s out -l 3000"
 }
 ,
   "dependencies": {
