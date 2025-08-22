@@ -1,12 +1,10 @@
 import type { NextConfig } from "next";
-
-
-
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
-}
-
+  output: "export",
+  basePath: "/EquipmentAlarm",
+  assetPrefix: "/EquipmentAlarm",
+};
 
 module.exports = nextConfig;
-
-export default nextConfig;
+ 
