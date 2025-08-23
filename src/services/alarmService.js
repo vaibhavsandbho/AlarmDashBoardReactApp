@@ -2,21 +2,21 @@
 //const API_BASE_URL = 'http://localhost:8090/EquipmentAlarm';
 
 
-//const API_BASE_URL = 'http://localhost:8090';
-const API_BASE_URL = 'http://192.168.10.179:8090';
+// //const API_BASE_URL = 'http://localhost:8090';
+ const API_BASE_URL = 'http://192.168.10.179:8090';
 
 export class AlarmService {
   // Fetch filtered alarms from database
   static async fetchFilteredAlarms(filterParams) {
     // Prepare filter parameters
     const params = { ...filterParams };
-    if (params.status === '') params.status = 'NA';
-    if (params.fromDate === '') params.fromDate = 'NA';
-    if (params.toDate === '') params.toDate = 'NA';
+    if (!params.status) params.status = 'NA';  // Handle undefined or null
+    if (!params.fromDate) params.fromDate = 'NA';  // Handle undefined or null
+    if (!params.toDate) params.toDate = 'NA';  // Handle undefined or null
     
     try {
       const response = await fetch(
-        `${API_BASE_URL}/dashborad/fetchEquipmentAlarmByAllFilters/${params.status}/${params.fromDate}/${params.toDate}`
+        `${API_BASE_URL}/dashboard/fetchEquipmentAlarmByAllFilters/${params.status}/${params.fromDate}/${params.toDate}`
       );
       
       if (!response.ok) {
@@ -31,9 +31,8 @@ export class AlarmService {
       throw new Error('Failed to load filtered alarms');
     }
   }
-
-
 }
+
 
 // SSE Connection Manager
 export class SSEConnectionManager {
