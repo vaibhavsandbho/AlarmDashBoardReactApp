@@ -1,17 +1,18 @@
 "use client";
 // IntegratedAlarmDashboard.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { AlertTriangle, CheckCircle, RefreshCw, Search, Calendar, X } from 'lucide-react';
 import { generateAlarmPdf } from '@/utils/pdfGenerator';
-import { AlarmService } from '@/services/alarmService'; // Import AlarmService
+import { AlarmService } from '@/services/alarmService';
+import { generateExcelReport } from "./utils/ExcelReportGenratater";
+
 // Custom hooks
 import { useAlarmData } from './hooks/useAlarmData';
 
 // Components
 import { AlarmStats } from './components/AlarmStats';
-import { AlarmCard } from './components/AlarmCard';// IntegratedAlarmDashboard.jsx
-import { generateExcelReport } from "./utils/ExcelReportGenratater";
-
+import { AlarmFilters } from './components/AlarmFilters';
+import { AlarmCard } from './components/AlarmCard';
 
 // Utils
 import { sortAlarms, applyClientSideSearch, filterAlarmsByTab, getAlarmCounts, applyDateRangeFilter, getDatePresets } from './utils/alarmUtils';
@@ -23,26 +24,47 @@ export default function IntegratedAlarmDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
-  const [displayedAlarms, setDisplayedAlarms] = useState([]);  // State to store the fetched alarms
+
+  // Additional state for backend data fetching
+  const [displayedAlarms, setDisplayedAlarms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Use custom hook to manage other alarm-related state and logic
-  const { filters, filterLoading, connectionStatus, handleReconnect, handleAcknowledge } = useAlarmData();
+  // Use custom hook to manage alarm-related state and logic
+  const {
+    displayedAlarms: hookAlarms,
+    filters,
+    filterLoading,
+    loading: hookLoading,
+    error: hookError,
+    lastUpdated,
+    isFilterMode,
+    connectionStatus,
+    handleApplyFilters,
+    handleClearFilters,
+    handleFilterChange,
+    handleReconnect,
+    handleAcknowledge
+  } = useAlarmData();
+
+  // Merge loading and error states
+  const finalLoading = loading || hookLoading;
+  const finalError = error || hookError;
+  const finalDisplayedAlarms = displayedAlarms.length > 0 ? displayedAlarms : hookAlarms;
 
   // Fetch filtered alarms from backend when filter changes
   const fetchFilteredAlarms = async () => {
     setLoading(true);
-    setError(null);  // Reset the error state before fetching
+    setError(null);
     const filterParams = {
-      status: '',  // You can adjust the status parameter based on requirements
+      status: '',
       fromDate: dateRange.from,
       toDate: dateRange.to,
     };
 
     try {
-      const alarms = await AlarmService.fetchFilteredAlarms(filterParams);  // Fetch filtered alarms from backend
-      setDisplayedAlarms(alarms);  // Update displayedAlarms with the fetched data
+      const alarms = await AlarmService.fetchFilteredAlarms(filterParams);
+      setDisplayedAlarms(alarms);
     } catch (error) {
       console.error('Failed to load filtered alarms:', error);
       setError('Failed to load filtered alarms');
@@ -56,19 +78,19 @@ export default function IntegratedAlarmDashboard() {
     if (dateRange.from && dateRange.to) {
       fetchFilteredAlarms();
     }
-  }, [dateRange]);  // Fetch data when date range changes
+  }, [dateRange]);
 
   // Apply client-side search and filtering
-  const dateFiltered = applyDateRangeFilter(displayedAlarms, dateRange.from, dateRange.to);
+  const dateFiltered = applyDateRangeFilter(finalDisplayedAlarms, dateRange.from, dateRange.to);
   const searchFiltered = applyClientSideSearch(dateFiltered, searchTerm);
   const tabFiltered = filterAlarmsByTab(searchFiltered, activeTab);
   const sortedAlarms = sortAlarms(tabFiltered);
-
-  // Final filtered list to pass to the PDF generator
-  const alarmList = sortedAlarms.length > 0 ? sortedAlarms : displayedAlarms;
+   
+  // Choose the list you want to show status for
+  const alarmList = sortedAlarms.length > 0 ? sortedAlarms : finalDisplayedAlarms;
 
   // Calculate stats from original data
-  const alarmCounts = getAlarmCounts(displayedAlarms);
+  const alarmCounts = getAlarmCounts(finalDisplayedAlarms);
 
   // Date presets
   const datePresets = getDatePresets();
@@ -87,7 +109,7 @@ export default function IntegratedAlarmDashboard() {
   const isDateFilterActive = dateRange.from || dateRange.to;
 
   // Loading state
-  if (loading) {
+  if (finalLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
@@ -132,7 +154,7 @@ export default function IntegratedAlarmDashboard() {
                 : 'bg-red-500'
               }`}
             ></div>
-            <span className="m-0 p-0 text-base">Last updated: {new Date().toLocaleTimeString()}</span>
+            <span className="m-0 p-0 text-base">Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : new Date().toLocaleTimeString()}</span>
           </div>
 
           <div className="flex items-center space-x-1 mr-45">
@@ -167,7 +189,7 @@ export default function IntegratedAlarmDashboard() {
       {/* PDF & Excel Download Buttons */}
       <div className="col-m-8" style={{ display: 'flex', gap: '16px', alignItems: 'center', marginLeft: '1950px', marginTop: '20px' }}>
         <button
-          onClick={() => generateExcelReport(alarmList)} // Ensure it's the filtered data here
+        
           style={{
             backgroundColor: '#207245',
             color: 'white',
@@ -186,8 +208,10 @@ export default function IntegratedAlarmDashboard() {
           📊 Excel Download
         </button>
 
+        
+
         <button
-          onClick={() => generateAlarmPdf(alarmList, 'Mahindra Admin')} // Ensure it's the filtered data here
+          onClick={() => generateAlarmPdf(alarmList, 'Mahindra Admin')}
           style={{
             backgroundColor: '#D93025',
             color: 'white',
@@ -208,17 +232,17 @@ export default function IntegratedAlarmDashboard() {
       </div>
 
       {/* Error Banner */}
-      {error && (
+      {finalError && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-lg">
           <div className="flex items-center">
             <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
-            <p className="text-red-700">{error}</p>
+            <p className="text-red-700">{finalError}</p>
           </div>
         </div>
       )}
 
       {/* Stats Cards */}
-      <AlarmStats alarms={displayedAlarms} />
+      <AlarmStats alarms={finalDisplayedAlarms} />
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-4 gap-6" style={{ background: '#2F5597' }}>
@@ -229,72 +253,130 @@ export default function IntegratedAlarmDashboard() {
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">
-                  Equipment Alarms ({alarmCounts.total})
-                </h2>
-
-                {/* Date Filter Button */}
-                <button
-                  onClick={() => setShowDateFilter(!showDateFilter)}  // Toggle Date Filter visibility
-                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDateFilterActive
-                    ? 'bg-green-100 text-green-700 border border-green-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Date Filter
-                  {isDateFilterActive && (
-                    <span className="ml-1 w-2 h-2 bg-green-500 rounded-full"></span>
+                  Equipment Alarms ({tabFiltered.length})
+                  {isFilterMode && (
+                    <span className="text-sm font-normal text-blue-600 ml-2">(Database Filtered)</span>
                   )}
-                </button>
+                  {isDateFilterActive && (
+                    <span className="text-sm font-normal text-green-600 ml-2">(Date Filtered)</span>
+                  )}
+                </h2>
+                <div className="flex items-center space-x-3">
+                  {/* Date Filter Button */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowDateFilter(!showDateFilter)}
+                      className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDateFilterActive
+                          ? 'bg-green-100 text-green-700 border border-green-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                    >
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Date Filter
+                      {isDateFilterActive && (
+                        <span className="ml-1 w-2 h-2 bg-green-500 rounded-full"></span>
+                      )}
+                    </button>
+
+                    {/* Date Filter Dropdown */}
+                    {showDateFilter && (
+                      <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 p-4 z-10">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-medium text-gray-900">Filter by Date Range</h3>
+                          <button
+                            onClick={() => setShowDateFilter(false)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Date Inputs */}
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">From Date</label>
+                            <input
+                              type="date"
+                              value={dateRange.from}
+                              onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">To Date</label>
+                            <input
+                              type="date"
+                              value={dateRange.to}
+                              onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Date Presets */}
+                        <div className="mb-4">
+                          <label className="block text-xs font-medium text-gray-700 mb-2">Quick Select</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {Object.entries(datePresets).map(([key, preset]) => (
+                              <button
+                                key={key}
+                                onClick={() => handleDatePreset(preset)}
+                                className="px-3 py-2 text-xs font-medium bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Clear Filter */}
+                        {isDateFilterActive && (
+                          <button
+                            onClick={clearDateFilter}
+                            className="w-full px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                          >
+                            Clear Date Filter
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Search Bar */}
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search equipment..."
+                      className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter Tabs */}
+              <div className="flex space-x-1">
+                {['All', 'Active', 'Critical'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                  >
+                    {tab}
+                    <span className="ml-2 px-2 py-0.5 text-xs bg-white/20 rounded-full">
+                      {tab === 'All' ? alarmCounts.total :
+                        tab === 'Active' ? alarmCounts.active :
+                          alarmCounts.critical}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
-
-            {/* Date Filter Dropdown (only visible if showDateFilter is true) */}
-            {showDateFilter && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 p-4 z-10">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-medium text-gray-900">Filter by Date Range</h3>
-                  <button
-                    onClick={() => setShowDateFilter(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Date Inputs */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">From Date</label>
-                    <input
-                      type="date"
-                      value={dateRange.from}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">To Date</label>
-                    <input
-                      type="date"
-                      value={dateRange.to}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                {/* Clear Date Filter */}
-                {isDateFilterActive && (
-                  <button
-                    onClick={clearDateFilter}
-                    className="w-full px-3 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                  >
-                    Clear Date Filter
-                  </button>
-                )}
-              </div>
-            )}
 
             {/* Alarms List */}
             <div className="px-6 pt-6 pb-2">
@@ -303,17 +385,55 @@ export default function IntegratedAlarmDashboard() {
                   <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">No alarms found</h3>
                   <p className="text-gray-500">
-                    {error ? 'Error fetching data' : 'All systems are operating normally.'}
+                    {isFilterMode
+                      ? 'No alarms match your filter criteria.'
+                      : connectionStatus === 'connected'
+                        ? 'All systems are operating normally.'
+                        : 'Waiting for real-time connection...'}
                   </p>
                 </div>
               ) : (
-                <div ref={containerRef} className="space-y-4 max-h-[540px] overflow-y-auto pr-2">
+                <div
+                  ref={containerRef}
+                  className="space-y-4 max-h-[540px] overflow-y-auto pr-2"
+                >
                   {sortedAlarms.map((alarm, index) => (
-                    <AlarmCard key={alarm.id || index} alarm={alarm} onAcknowledge={handleAcknowledge} />
+                    <AlarmCard
+                      key={alarm.id || index}
+                      alarm={alarm}
+                      onAcknowledge={handleAcknowledge}
+                    />
                   ))}
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Right Sidebar */}
+        {/* Equipment Status */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mt-10">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Equipment Status</h3>
+          <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
+            {[...new Set(alarmList.map(alarm => alarm.equipmentName))].map((equipmentName) => {
+              const count = alarmList.filter(a => a.equipmentName === equipmentName).length;
+              return (
+                <div
+                  key={equipmentName}
+                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50"
+                >
+                  <p className="text-sm font-medium text-gray-900">{equipmentName}</p>
+                  <p className="text-lg font-bold text-gray-900">{count}</p>
+                </div>
+              );
+            })}
+
+            {/* If no alarms found */}
+            {alarmList.length === 0 && (
+              <div className="text-center py-4">
+                <p className="text-gray-500">No equipment found</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
