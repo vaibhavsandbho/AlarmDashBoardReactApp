@@ -3,7 +3,9 @@ import type { NextConfig } from "next";
 
 
 const nextConfig = {
-  output: 'export',
+  output: "export",
+  basePath: "/EquipmentAlarm",
+  assetPrefix: "/EquipmentAlarm",
 }
 
 
