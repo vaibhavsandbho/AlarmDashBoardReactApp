@@ -2,10 +2,10 @@
 //const API_BASE_URL = 'http://localhost:8090/EquipmentAlarm';
 
 
-//const API_BASE_URL = 'http://localhost:8090';
+const API_BASE_URL = 'http://localhost:8090';
 // const API_BASE_URL = 'http://192.168.10.179:8090';
 
-const API_BASE_URL = 'http://localhost:8090/EquipmentAlarm';
+//const API_BASE_URL = 'http://localhost:8090/EquipmentAlarm';
 //const API_BASE_URL = 'http://10.192.65.167:8090/EquipmentAlarm';
 
 export class AlarmService {

@@ -126,7 +126,7 @@ export default function IntegratedAlarmDashboard() {
       <div className="relative bg-white rounded-2xl shadow-lg mb-1 px-2 py-2" style={{ background: '#ffd900e1', height: '90px' }}>
         {/* Larger Image */}
         <img
-          src="/assets/MM-images.png"
+          src="/assets/mazak.png"
           alt="mahindra-logo"
           style={{
             position: 'absolute',
